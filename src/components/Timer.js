@@ -2,7 +2,7 @@ import React from 'react'
 import { useState, useEffect } from 'react';
 
 const Timer = (props:any) => {
-    const {initialMinute = 1,initialSeconds = 0} = props;
+    const {initialMinute = 0,initialSeconds = 20, stopRecording} = props;
     const [ minutes, setMinutes ] = useState(initialMinute);
     const [seconds, setSeconds ] =  useState(initialSeconds);
     useEffect(()=>{
@@ -12,6 +12,7 @@ const Timer = (props:any) => {
             }
             if (seconds === 0) {
                 if (minutes === 0) {
+                    stopRecording();
                     clearInterval(myInterval)
                 } else {
                     setMinutes(minutes - 1);

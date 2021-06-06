@@ -6,9 +6,12 @@ function GoogleSuccess({ location }) {
   const loadGemsConfig = async () => {
     try {
       const queryParams = qs.parse(location.search, { ignoreQueryPrefix: true });
-      const { token } = queryParams;
-      localStorage.setItem("token", token);
-      history.push("/recorder");
+      const { token, approvalStatus } = queryParams;
+      console.log(queryParams)
+      if(approvalStatus === "Approved") {
+        localStorage.setItem("token", token);
+        history.push("/recorder");
+      }
     } catch (error) {
       console.error("error received", error);
       history.push("/login");
@@ -20,7 +23,12 @@ function GoogleSuccess({ location }) {
   }, []);
 
 
-  return null
+    return (
+        <div className="App">
+            <a href="http://localhost:3001/auth/google">Sign In with Google</a>
+            <p>Your email is not approved yet, please try again when the admin approves it</p>
+        </div>
+    );
 }
 
 export default GoogleSuccess;

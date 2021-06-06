@@ -8,6 +8,7 @@ import StopRoundedIcon from '@material-ui/icons/StopRounded';
 import { makeStyles } from '@material-ui/core/styles';
 import Timer from './Timer';
 import API_URL from '../config'
+import AudioResult from './AudioResult';
 
 const recordingStates = {
   START: "start",
@@ -42,7 +43,8 @@ function Recorder() {
   const classes = useStyles();
   const [recording, setRecording] = useState(recordingStates.NEUTRAL);
   const [recorder, setRecorder] = useState(null);
-  const [audioStatus, setAudioStatus] = useState();
+  const [audioStatus, setAudioStatus] = useState(resultAudioStates.NOAUDIO);
+  const [inference, setInference] = useState("");
   const initializeRecorder = async () => {
     let stream = await navigator.mediaDevices.getUserMedia({video: false, audio: true});
     let currentRecorder = new RecordRTCPromisesHandler(stream, {
@@ -55,6 +57,7 @@ function Recorder() {
   }, [])
   const startRecording = async () => {
     recorder.startRecording();
+    setAudioStatus(resultAudioStates.NOAUDIO);
   }
 
   const stopRecording = async () => {
@@ -71,7 +74,9 @@ function Recorder() {
       console.log(token)
       console.log(API_URL)
       const res = await axios.post(`${API_URL}/upload`, data, headers);
-      const { audioStatus } = res.data;
+      const { audioStatus, inference } = res.data;
+      setAudioStatus(audioStatus);
+      setInference(inference);
 
     } catch (err) {
       console.error(err)
@@ -100,6 +105,7 @@ function Recorder() {
   }
   return (
     <div className="App">
+        <h1>Press Button to start/stop recording</h1>
       <IconButton 
         disabled={ recording === recordingStates.STOP ? true : false }
         className={recording === recordingStates.START ? classes.stopButton : classes.recordButton }
@@ -109,10 +115,13 @@ function Recorder() {
         } aria-label="Record">
         {getIconButton()}
       </IconButton>
+
+      <h3>Ideal call script</h3>
       <p>
       हैलो पंकज जी बात कर रहे हैं? जी मैं राहुल बात कर रहा हूं Tikona Broadband से। हमारी कंपनी बोहोत हाई स्पीड पर अनलिमिटेड डेटा प्रोवाइड कर ती है। हमारा सबसे कम पैक 15 एमबीपीएस का है और वो मोबाइल डेटा की स्पीड से 3-4 गुना तेज है
       </p>
-      { recording === recordingStates.START ? <Timer /> : null }
+      { recording === recordingStates.START ? <Timer stopRecording={stopRecording} /> : null }
+      { audioStatus !== resultAudioStates.NOAUDIO ? <AudioResult audioStatus={audioStatus} inference={inference}/> : null }
     </div>
   );
 }
