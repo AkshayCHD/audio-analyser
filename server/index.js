@@ -3,13 +3,22 @@ const speech = require('@google-cloud/speech');
 const docSimilarity = require('doc-similarity');
 const profanityHindi = require('profanity-hindi');
 const { Comprehend } = require("@aws-sdk/client-comprehend");
-
+const authRoutes = require('./login');
 dotenv.config();
+require('./db');
 console.log(process.env.GOOGLE_APPLICATION_CREDENTIALS)
 const express = require('express')
 const multer = require('multer');
+var jwt = require('express-jwt');
+var cors = require('cors')
+
 const app = express()
 const port = 3001
+
+app.use(require('serve-static')(__dirname + '/../../public'));
+app.use(require('cookie-parser')());
+app.use(require('body-parser').urlencoded({ extended: true }));
+app.use(cors())
 
 // const { Readable } = require('stream');
 const client = new speech.SpeechClient();
@@ -102,7 +111,10 @@ const getProfanityFlag = async (transcriptionHindi) => { var newWords = ["this",
     return { redFlag: 0, greenFlag: 0 };
 }
 
-app.post('/upload', uploadStrategy, async (req, res) => {
+app.post('/upload', jwt({
+    secret: process.env.JWT_SECRET,
+    algorithms: ['HS256']
+  }), uploadStrategy, async (req, res) => {
     console.log(req["file"].buffer);
     const responseHindi = await transcribeAudioHindi(req["file"].buffer);
     const responseEnglish = await transcribeAudioEnglish(req["file"].buffer);
@@ -141,6 +153,8 @@ app.post('/upload', uploadStrategy, async (req, res) => {
     console.log(audioStatus)
     res.status(200).send({ audioStatus })
 })
+app.use('/auth', authRoutes);
+
   
 app.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`)
