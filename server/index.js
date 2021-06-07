@@ -1,5 +1,7 @@
 const dotenv = require('dotenv');
 dotenv.config();
+const natural = require('natural');
+const path = require("path");
 const stringSimilarity = require("string-similarity");
 const speech = require('@google-cloud/speech');
 const docSimilarity = require('doc-similarity');
@@ -12,15 +14,19 @@ const express = require('express')
 const multer = require('multer');
 var jwt = require('express-jwt');
 var cors = require('cors');
-const { green } = require('@material-ui/core/colors');
 
 const app = express()
 const port = 3001
 
-app.use(require('serve-static')(__dirname + '/../../public'));
+app.use(express.static(path.join(__dirname, "..", "build")));
+app.use(express.static("public"));
 app.use(require('cookie-parser')());
 app.use(require('body-parser').urlencoded({ extended: true }));
 app.use(cors())
+
+// app.get("/", (req, res) => {
+//     res.sendFile(path.join(__dirname, "public", "index.html"));
+// });
 
 // const { Readable } = require('stream');
 const client = new speech.SpeechClient();
@@ -50,28 +56,6 @@ async function transcribeAudioHindi(audio){
     return responses;
 }
 
-
-async function transcribeAudioEnglish(audio){
-    let request = {};
-    const config = {
-        languageCode: 'en-IN',
-        speechContexts: [{
-            phrases: ["tikona", "broadband", "Idiot Insaan"],
-            boost: 10.0
-        }],
-        // {
-        //     phrases: ["tikona broadband"],
-        //     boost: 10.0
-        // }]
-    };
-    request.audio = {
-        content: audio
-    };
-    request.config = config;
-    const responses = await client.recognize(request);
-    return responses;
-}
-
 const getSentimentFlag = async (transcriptionHindi) => {
     try {
         var params = {
@@ -82,7 +66,7 @@ const getSentimentFlag = async (transcriptionHindi) => {
         console.log(sentiment)
         const { Mixed, Negative, Neutral, Positive } = sentiment.SentimentScore;
         const inference = `The audio has the following component Mixed ${Mixed}, Negative ${Negative}, Neutral, ${Neutral}, Positive, ${Positive}.`;
-        if (Negative > 0.8) {
+        if (Negative > 0.5) {
             return { redFlag: 2, greenFlag: 0, inference };
         }
         if(Positive > 0.8) {
@@ -122,13 +106,27 @@ const getSimilarityFlag = async (transcriptionHindi) => {
 
 const getProfanityFlag = async (transcriptionHindi) => {
     try {
-        profanityHindi.addWords(["kutta", "kamina"]);
-        const inappropriateWordUsed = profanityHindi.isMessageDirty(transcriptionHindi);
-        if(inappropriateWordUsed) {
-            return { redFlag: 2, greenFlag: 0, inference: "In-appropriate words detected." };
+        const profanityList = ["कुत्ता", "कामिना", "हरामज़्यादा", "इडियट"]
+        const transcriptionWords = transcriptionHindi.split(" ");
+        console.log(transcriptionWords)
+        let redFlag = 0;
+        const inAppropriateWordsDetected = [];
+        transcriptionWords.map((transcriptionWord) => {
+            profanityList.map((badWord) => {
+                let confidence = natural.JaroWinklerDistance(transcriptionWord, badWord);
+                if(confidence > 0.85) {
+                    redFlag = redFlag + 1;
+                    console.log(confidence)
+                    inAppropriateWordsDetected.push(transcriptionWord);
+                }
+            })
+        })
+        if(redFlag > 0) {
+            return { redFlag, greenFlag: 0, inference: `In-appropriate words detected. ${inAppropriateWordsDetected}` };
         }
-        return { redFlag: 0, greenFlag: 0, inference: "No In-appropriate words detected." };
+        return { redFlag: 0, greenFlag: 0, inference: `No In-appropriate words detected` };
     } catch(error) {
+        console.log(error)
         return { redFlag: 0, greenFlag: 0, inference: "Unable to check profanity." };
     }
 }
@@ -139,7 +137,7 @@ app.post('/upload', jwt({
   }), uploadStrategy, async (req, res) => {
     console.log(req["file"].buffer);
     const responseHindi = await transcribeAudioHindi(req["file"].buffer);
-    const responseEnglish = await transcribeAudioEnglish(req["file"].buffer);
+    // const responseEnglish = await transcribeAudioEnglish(req["file"].buffer);
   
     const transcriptionHindi = responseHindi[0].results.length ? responseHindi[0].results
         .map(result => {
@@ -147,18 +145,11 @@ app.post('/upload', jwt({
             return result.alternatives[0].transcript
         })
         .join('\n'): "";
-    const transcriptionEnglish = responseEnglish[0].results.length ? responseEnglish[0].results
-        .map(result => {
-        console.log(result.alternatives)
-            return result.alternatives[0].transcript
-        })
-        .join('\n') : "";
-    console.log(transcriptionEnglish)
     console.log(transcriptionHindi)
     let redFlagCount = 0, greenFlagCount = 0;
     const sentimentFlags = await getSentimentFlag(transcriptionHindi);
     const similarityFlags = await getSimilarityFlag(transcriptionHindi);
-    const profanityFlags = await getProfanityFlag(transcriptionEnglish);
+    const profanityFlags = await getProfanityFlag(transcriptionHindi);
     redFlagCount += sentimentFlags.redFlag + similarityFlags.redFlag + profanityFlags.redFlag;
     greenFlagCount += sentimentFlags.greenFlag + similarityFlags.greenFlag + profanityFlags.greenFlag;
     console.log(greenFlagCount)
@@ -178,7 +169,9 @@ app.post('/upload', jwt({
 })
 app.use('/auth', authRoutes);
 
-  
+app.use((req, res, next) => {
+    res.sendFile(path.join(__dirname, "..", "build", "index.html"));
+});
 app.listen(port, () => {
     console.log(`Example app listening at http://localhost:${port}`)
 })
