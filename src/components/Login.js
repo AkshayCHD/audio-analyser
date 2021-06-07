@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { makeStyles } from '@material-ui/core/styles';
 import { history } from '../history';
+import API_URL from '../config';
 
 const useStyles = makeStyles((theme) => ({
 }));
@@ -16,7 +17,7 @@ function Login() {
     }, [])
   return (
     <div className="App">
-      <a href="http://localhost:3001/auth/google">Sign In with Google</a>
+      <a href={`${API_URL}/auth/google`}>Sign In with Google</a>
     </div>
   );
 }

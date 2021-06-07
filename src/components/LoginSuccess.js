@@ -1,6 +1,7 @@
 import React, { useEffect } from "react";
 import qs from "qs";
 import { history } from '../history'
+import API_URL from '../config';
 
 function GoogleSuccess({ location }) {
   const loadGemsConfig = async () => {
@@ -25,7 +26,7 @@ function GoogleSuccess({ location }) {
 
     return (
         <div className="App">
-            <a href="http://localhost:3001/auth/google">Sign In with Google</a>
+            <a href={`${API_URL}/auth/google`}>Sign In with Google</a>
             <p>Your email is not approved yet, please try again when the admin approves it</p>
         </div>
     );
