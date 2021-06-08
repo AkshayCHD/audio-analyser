@@ -119,7 +119,7 @@ const getProfanityFlag = async (transcriptionHindi) => {
             profanityList.map((badWord) => {
                 let confidence = natural.JaroWinklerDistance(transcriptionWord, badWord);
                 if(confidence > 0.85) {
-                    redFlag = redFlag + 1;
+                    redFlag = redFlag + 2;
                     console.log(confidence)
                     inAppropriateWordsDetected.push(transcriptionWord);
                 }
