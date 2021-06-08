@@ -1,70 +1,69 @@
-# Getting Started with Create React App
+# Audio Analyser
 
-This project was bootstrapped with [Create React App](https://github.com/facebook/create-react-app).
+## Overview
+The application acts as an audio analyser, responsible for recording audio via web browser, analyse it using different mechanisms against a provided script, and categorizing it among 3 categories namely
+* Pass
+* Failed
+* Flag
 
-## Available Scripts
+## Steps in analysis
+The following measures are used to provide Red/Green flags to audios and based on the difference of red and green flags we determine in which state the audio should be in.
 
-In the project directory, you can run:
+### Conversion from audio to text
+The Application uses Google's Speech to Text api, to convert the recorded audio to text. To increase the accuracy of the api we have used Phase boost feature of the api, that boosts the detection of some phases that are most likly to occur given our context of audio, such as proper nouns, that would be hard to detect otherwise.
 
-### `npm start`
+### Similarity Detection
+Once we have the audio converted to text, we use `Dice's Coefficient` which is is a statistic used to gauge the similarity of two samples, to calculate the degree of similarity between the converted string and our string.
 
-Runs the app in the development mode.\
-Open [http://localhost:3000](http://localhost:3000) to view it in the browser.
+### Sentiment Analysis
+After similarity analysis we use sentiment analysis to analyse emotions in the sound, for this we use Amazon Comprehend, that can analyse sentiments of text written in hindi languages quite efficiently, and allot red and green flags according to the results obtained.
 
-The page will reload if you make edits.\
-You will also see any lint errors in the console.
+### Profanity Analysis
+Sentiment analysis is not every good at detecting profanity in a text sample, in the sense that it does not take it that seriously if the rest of the input seems good, so for that we have to add another layer of profanity analysis on top of sentiment analysis that uses `JaroWinklerDistance` to detect words that are close to or exactly same as our set of bad words/phrases.
 
-### `npm test`
+### Categorizing
+Finally we take the red and green flags provided by these various methods and on the basis of the total number of flags determine if the audio has passed out test or failed it or has been flagged.
 
-Launches the test runner in the interactive watch mode.\
-See the section about [running tests](https://facebook.github.io/create-react-app/docs/running-tests) for more information.
+## Project Setup
+To set up the project you will need
+* Google Speech to Text api access key
+* Amazon Comprehend Access keys
+* Google OAuth ClientId and Client Secret
+* MongoDB connection string
 
-### `npm run build`
+Once you have all of that follow the steps to setup the application
 
-Builds the app for production to the `build` folder.\
-It correctly bundles React in production mode and optimizes the build for the best performance.
+* Clone the application
+```
+git clone https://github.com/AkshayCHD/audio-analyser.git
+```
 
-The build is minified and the filenames include the hashes.\
-Your app is ready to be deployed!
+* Move to project directory
+```
+cd audio-analyser
+```
 
-See the section about [deployment](https://facebook.github.io/create-react-app/docs/deployment) for more information.
+* Add following environment variables
+```
+GOOGLE_APPLICATION_CREDENTIALS=
+AWS_REGION=
+AWS_ACCESS_KEY_ID=
+AWS_SECRET_ACCESS_KEY=
+MONGO_URI=
+JWT_SECRET=
+BACKEND_URL=
+FRONTEND_URL=
+REACT_APP_API_URL=
+GOOGLE_LOGIN_CLIENT_ID=
+GOOGLE_LOGIN_CLIENT_SECRET=
+```
 
-### `npm run eject`
+* Build the web-app
+```
+npm run build
+```
 
-**Note: this is a one-way operation. Once you `eject`, you can’t go back!**
-
-If you aren’t satisfied with the build tool and configuration choices, you can `eject` at any time. This command will remove the single build dependency from your project.
-
-Instead, it will copy all the configuration files and the transitive dependencies (webpack, Babel, ESLint, etc) right into your project so you have full control over them. All of the commands except `eject` will still work, but they will point to the copied scripts so you can tweak them. At this point you’re on your own.
-
-You don’t have to ever use `eject`. The curated feature set is suitable for small and middle deployments, and you shouldn’t feel obligated to use this feature. However we understand that this tool wouldn’t be useful if you couldn’t customize it when you are ready for it.
-
-## Learn More
-
-You can learn more in the [Create React App documentation](https://facebook.github.io/create-react-app/docs/getting-started).
-
-To learn React, check out the [React documentation](https://reactjs.org/).
-
-### Code Splitting
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/code-splitting](https://facebook.github.io/create-react-app/docs/code-splitting)
-
-### Analyzing the Bundle Size
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size](https://facebook.github.io/create-react-app/docs/analyzing-the-bundle-size)
-
-### Making a Progressive Web App
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app](https://facebook.github.io/create-react-app/docs/making-a-progressive-web-app)
-
-### Advanced Configuration
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/advanced-configuration](https://facebook.github.io/create-react-app/docs/advanced-configuration)
-
-### Deployment
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/deployment](https://facebook.github.io/create-react-app/docs/deployment)
-
-### `npm run build` fails to minify
-
-This section has moved here: [https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify](https://facebook.github.io/create-react-app/docs/troubleshooting#npm-run-build-fails-to-minify)
+* Run the express app
+```
+node ./server/index.js
+```

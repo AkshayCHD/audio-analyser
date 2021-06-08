@@ -46,6 +46,10 @@ async function transcribeAudioHindi(audio){
         {
             phrases: ["अनलिमिटेड डेटा", "15 एमबीपीएस", "तीन चार गुना"],
             boost: 5.0
+        }, {
+            // Added for profanity detection
+            phrases: ["कुत्ता", "कामिना", "हरामज़्यादा", "इडियट"],
+            boost: 5.0
         }]
     };
     request.audio = {
