@@ -15,11 +15,30 @@ The Application uses Google's Speech to Text api, to convert the recorded audio 
 ### Similarity Detection
 Once we have the audio converted to text, we use `Dice's Coefficient` which is is a statistic used to gauge the similarity of two samples, to calculate the degree of similarity between the converted string and our string.
 
+Broadly speaking the value of dice cofficient for 2 strings x and y
+
+s = 2(n<sub>t</sub> / (n<sub>x</sub> + n<sub>t</sub>))
+
+where n<sub>t</sub> is the number of character biagrams found in both strings. and n<sub>x</sub>, n<sub>y</sub> are biagrams in string x and y respectively.
+
 ### Sentiment Analysis
 After similarity analysis we use sentiment analysis to analyse emotions in the sound, for this we use Amazon Comprehend, that can analyse sentiments of text written in hindi languages quite efficiently, and allot red and green flags according to the results obtained.
 
 ### Profanity Analysis
 Sentiment analysis is not every good at detecting profanity in a text sample, in the sense that it does not take it that seriously if the rest of the input seems good, so for that we have to add another layer of profanity analysis on top of sentiment analysis that uses `JaroWinklerDistance` to detect words that are close to or exactly same as our set of bad words/phrases.
+
+Jaro's cofficient can be calculated by the following formula
+Sim<sub>j</sub> = 1 / 3 (m / |s<sub>i</sub>| + m / |s<sub>j</sub>| + (m - t) / m)
+
+where m is the number of matching characters |s<sub>x</sub>| is the number of characters in string x and t is transpose which represents number of matching characters that are in different order divided by 2.
+
+Jaro Winkler similarity is defined as follows 
+Sw = Sj + P * L * (1 – Sj) 
+where, 
+Sj, is jaro cofficient
+Sw, is jaro- winkler similarity
+P is the scaling factor (0.1 by default)
+L is the length of the matching prefix up to a maximum of 4 characters.
 
 ### Categorizing
 Finally we take the red and green flags provided by these various methods and on the basis of the total number of flags determine if the audio has passed out test or failed it or has been flagged.
